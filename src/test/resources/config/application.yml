@@ -1,0 +1,6 @@
+# Merged over src/main/resources/application.yml for tests only.
+app:
+  admin:
+    password: admin12345
+  jwt:
+    secret: test-secret-not-for-production-0123456789

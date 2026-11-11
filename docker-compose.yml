@@ -1,0 +1,37 @@
+# Secrets come from the environment or a .env file next to this file (cp .env.example .env).
+# Compose refuses to start if one is missing. Ports bind to localhost only.
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: cinema
+      POSTGRES_USER: cinema
+      # Only applied when the pgdata volume is first created; `docker compose down -v` to change it.
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cinema -d cinema"]
+      interval: 5s
+      retries: 10
+
+  app:
+    build: .
+    image: ghcr.io/14m6d4/se-phase-01:latest
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/cinema
+      DB_USERNAME: cinema
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@cinema.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

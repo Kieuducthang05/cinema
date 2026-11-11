@@ -1,0 +1,7 @@
+# Capacity baseline by stepped arrival-rate runs
+
+English | [Tiếng Việt](0007-capacity-baseline-by-stepped-arrival-rate-runs.vi.md)
+
+The load-test baseline measures where each scenario stops holding, so phase 2 can rerun the same steps and compare. Each scenario runs an unmeasured warm-up, then one separate k6 run per step at a constant arrival rate, starting at 50 iterations/s and doubling until a step breaks, then one step at the midpoint. A step breaks when, over its whole 60 seconds, p95 exceeds 200 ms, more than 1% of measured requests fail unexpectedly, fewer than 99% of checks pass, any iteration is dropped, or k6 achieves less than 95% of the target rate. The highest step that held is the scenario's max sustainable throughput. Book running out of seeded Seats ends its run without counting as a break.
+
+One run per step, rather than one run with a stage per rate, because k6 evaluates thresholds and summaries over a whole run: per-step runs give each rate its own summary without per-stage tagging. For the same reason k6 never fails a step: its thresholds only make the tagged metrics appear, and `loadtest/report.py` applies the rules above. During each step the notebook samples CPU per process, Hikari, Tomcat, GC and PostgreSQL wait events every second and saves the step's top SQL statements, so the report can name the tier that gave out. Changing a rule, the step sizes or the duration makes earlier baselines incomparable, so a change needs a new baseline of the old code too.
