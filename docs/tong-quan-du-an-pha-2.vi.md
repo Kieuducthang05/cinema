@@ -36,4 +36,20 @@ Chạy nhanh: sao chép `.env.example` thành `.env`, điền `DB_PASSWORD`, `JW
 - **Hiệu năng:** baseline k6 trên Kaggle ghi nhận luồng tranh ghế giữ được khoảng **200–400 workflow/s** tùy scenario và lần chạy. Truy vấn trạng thái ghế là điểm tốn thời gian nổi bật khi tranh chấp; sơ đồ ghế tĩnh cũng đang bị đọc lại mỗi request. Các số này thuộc môi trường đo cụ thể, không phải cam kết năng lực khi triển khai nơi khác.
 - **Vận hành và API:** hiện là một instance, observability mới có health/metrics; các danh sách chưa phân trang. Mỗi thay đổi hiệu năng nên đo lại bằng cùng scenario và kiểm tra bất biến không bán trùng ghế.
 
+## 5. Các hướng để team chọn cho pha 2
+
+Nên chọn **một hướng chính** có kết quả đo được, rồi thêm tối đa một hạng mục nhỏ từ hướng khác. Mức công sức dưới đây là ước lượng tương đối để thảo luận, chưa phải cam kết thời gian.
+
+| Hướng | Phạm vi tối thiểu có thể hoàn thành | Minh chứng nghiệm thu | Công sức / phụ thuộc |
+|---|---|---|---|
+| **A. Tối ưu đặt và xem ghế** | Tối ưu truy vấn trạng thái ghế khi tranh chấp; cache sơ đồ ghế tĩnh theo phòng; giữ các constraint hiện có | So sánh k6 trước/sau trên cùng môi trường: throughput, p95, thời gian SQL; test đồng thời xác nhận không bán trùng ghế | **Vừa**; đã có baseline và scenario k6 |
+| **B. Thanh toán và hoàn tiền thực** | Tích hợp một nhà cung cấp qua adapter; lưu mã giao dịch; xử lý callback/webhook, thất bại, timeout và hoàn tiền | Gửi callback lặp hoặc đảo thứ tự vẫn chỉ ghi nhận một giao dịch; trạng thái đơn khớp trạng thái thanh toán; demo bằng sandbox | **Cao**; cần tài khoản sandbox, thiết kế lại vòng đời đơn |
+| **C. Chống lạm dụng và nâng bảo mật** | Rate limit đăng nhập/đặt vé; giới hạn số Hold theo tài khoản hoặc thời gian; xác minh email trước khi đặt | Test vượt ngưỡng nhận phản hồi phù hợp; nhiều tài khoản không thể giữ ghế vô hạn; luồng khách hợp lệ vẫn chạy được | **Vừa–cao**; email cần dịch vụ gửi hoặc môi trường giả lập |
+| **D. Vận hành nhiều instance** | Chạy ít nhất hai app sau load balancer; structured log, correlation ID và metrics cho đặt vé | Dừng một instance vẫn phục vụ; test tranh ghế qua nhiều instance không bán trùng; xem được lỗi/độ trễ theo request | **Cao**; cần môi trường triển khai và theo dõi |
+| **E. Hoàn thiện API và quản trị** | Phân trang danh sách; quản lý tài khoản Admin và audit thao tác hủy suất/đổi danh mục | OpenAPI và test quyền cập nhật; audit truy ra ai làm gì, khi nào; danh sách lớn có giới hạn kích thước | **Vừa**; phạm vi ít rủi ro hơn nhưng giá trị kiến trúc thấp hơn A–D |
+
+**Khuyến nghị để khởi động:** chọn **A** làm hướng chính vì có baseline đo sẵn và gắn với bất biến cốt lõi của hệ thống; có thể ghép rate limit/giới hạn Hold từ **C** nếu còn nguồn lực. Với mọi hướng, giữ `./mvnw verify`, cập nhật OpenAPI/migration khi đổi giao diện hoặc schema, và ghi lại kết quả trước/sau. Nếu chọn **B**, cần chốt nhà cung cấp, cách nhận callback và quy tắc xử lý thanh toán đến sau khi Hold hết hạn trước khi viết mã.
+
+**Mẫu quyết định cho buổi họp:** Hướng chính: ___; vấn đề muốn giải quyết: ___; phạm vi làm/không làm: ___; chỉ số hoặc kịch bản nghiệm thu: ___; người phụ trách: ___; mốc demo: ___. Sau khi chốt, tách thành các issue nhỏ: thiết kế → triển khai → test → đo/đánh giá → cập nhật tài liệu.
+
 **Lộ trình đọc tiếp:** [walkthrough đặt vé](booking-walkthrough.vi.md) để thấy luồng đầu cuối; [glossary](../GLOSSARY.vi.md) để thống nhất thuật ngữ; [ADR](adr/) để hiểu lý do thiết kế; [báo cáo baseline](loadtest-baseline.vi.md) và [hướng dẫn load test](../loadtest/README.vi.md) trước khi tối ưu. README gốc có danh sách đầy đủ endpoint, kiểm thử và vấn đề đã biết.
